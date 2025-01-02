@@ -13,7 +13,7 @@ BOT_TOKEN = "7673483122:AAGyk8HAfVJ6D0_xzgJZTtgnhyqpnwXx-2c"
 # Folder containing your images
 IMAGE_FOLDER = "images"
 
-# Start time of the bot
+CATEGORY_FOLDER = "public"
 START_TIME = time.time()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,13 +32,44 @@ async def send_random_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Pick a random image
         random_image = random.choice(image_files)
-        image_path = os.path.join("public", random_image)
+        image_path = os.path.join(CATEGORY_FOLDER, random_image)
+       
 
         # Send the image
         with open(image_path, "rb") as image:
             await update.message.reply_photo(image)
     except Exception as e:
         await update.message.reply_text(f"An error occurred: {e}")
+
+async def category_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a random image from a specified category."""
+    if len(context.args) == 0:
+        await update.message.reply_text("Please specify a category! Use /category <category_name>.")
+        return
+
+    category = context.args[0].lower()
+
+    # Check if the category folder exists
+    category_path = os.path.join(CATEGORY_FOLDER, category)
+
+    if not os.path.exists(category_path):
+        await update.message.reply_text(f"Category '{category}' not found! Available categories: waifu, landscape, animals.")
+        return
+
+    # Get all image files in the category folder
+    image_files = [f for f in os.listdir(category_path) if f.endswith((".png", ".jpg", ".jpeg", ".jfif"))]
+    
+    if not image_files:
+        await update.message.reply_text(f"No images available in the '{category}' category!")
+        return
+
+    # Pick a random image from the category
+    random_image = random.choice(image_files)
+    image_path = os.path.join(category_path, random_image)
+
+    # Send the image
+    with open(image_path, "rb") as image:
+        await update.message.reply_photo(image)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a list of available commands."""
@@ -77,6 +108,7 @@ def main():
 
     # Add command handlers
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("category", category_command))
     application.add_handler(CommandHandler("image", send_random_image))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("status", status_command))
